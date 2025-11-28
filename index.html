@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>瓦勒斯美食雷達 V1.0</title>
+    <style>
+        /* CSS 樣式開始 */
+        :root {
+            --main-red: #E91E63; /* 主題紅 */
+            --main-orange: #FF9800; /* 按鈕強調色 */
+            --main-purple: #673AB7; /* 幫我選 按鈕色 */
+            --bg-light: #F8F8F8; /* 淺背景色 */
+            --text-dark: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-light);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 標題區 */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: var(--main-red);
+            font-size: 1.8em;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: #777;
+            margin-top: 0;
+            font-size: 0.9em;
+        }
+
+        /* 主餐/下午茶切換按鈕組 */
+        .main-toggle {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            background-color: #eee;
+            border-radius: 8px;
+            padding: 5px;
+        }
+
+        .toggle-btn {
+            flex-grow: 1;
+            padding: 10px 20px;
+            margin: 0 5px;
+            border: none;
+            border-radius: 6px;
+            background-color: transparent;
+            color: var(--text-dark);
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.2s, box-shadow 0.2s;
+        }
+
+        .toggle-btn.active-main {
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            color: var(--main-orange);
+            font-weight: bold;
+        }
+
+        /* 選擇區塊 */
+        .section-title {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: var(--main-red);
+            border-left: 4px solid var(--main-red);
+            padding-left: 10px;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+
+        /* 核心修改點 A: 將網格從 2 欄改為 3 欄 (為了容納更多餐點) */
+        .selection-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 15px;
+        }
+
+        .selection-button {
+            padding: 15px 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: white;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.95em;
+            user-select: none;
+            line-height: 1.2;
+        }
+
+        /* 圖標顏色和大小設定 */
+        .selection-button span.icon {
+            display: block;
+            font-size: 1.4em; /* 圖標/Emoji 字體大小 */
+            margin-bottom: 4px;
+        }
+
+        /* 按鈕選中樣式 */
+        .selection-button.active-select {
+            border: 2px solid var(--main-orange);
+            background-color: #FFF3E0;
+            color: var(--text-dark);
+            box-shadow: 0 0 5px rgba(255, 152, 0, 0.5);
+            font-weight: bold;
+        }
+        
+        .hidden-food {
+            display: none;
+        }
+
+        /* 搜尋按鈕組 */
+        .action-buttons {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .action-btn {
+            flex-grow: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        #search-button {
+            background-color: var(--main-orange);
+            color: white;
+        }
+
+        #random-button {
+            background-color: var(--main-purple);
+            color: white;
+        }
+
+        .action-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        
+        /* 響應式調整 */
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            /* 手機上仍然維持 2 欄或 1 欄，避免過擠 */
+            .selection-grid {
+                grid-template-columns: repeat(2, 1fr); 
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <span style="color: var(--main-red); margin-right: 5px;">📍</span>
+            <h1>瓦勒斯美食雷達 V1.0</h1>
+            <p>Google Map 智慧快搜</p>
+        </div>
+
+        <div class="main-toggle">
+            <button id="toggle-main" class="toggle-btn active-main">
+                <span style="margin-right: 5px;">🍴</span> 找正餐
+            </button>
+            <button id="toggle-tea" class="toggle-btn">
+                <span style="margin-right: 5px;">☕</span> 下午茶
+            </button>
+        </div>
+
+        <div class="section-title">1. 用餐情境</div>
+        <div id="situation-selection" class="selection-grid">
+            <div id="situation-casual" class="selection-button situation-btn active-select" data-value="隨便吃吃">
+                <span class="icon">🍔</span> 隨便吃吃
+            </div>
+            <div id="situation-solo" class="selection-button situation-btn" data-value="1人獨享">
+                <span class="icon">👤</span> 1人獨享
+            </div>
+            <div id="situation-couple" class="selection-button situation-btn" data-value="2人約會">
+                <span class="icon">💖</span> 2人約會
+            </div>
+            <div id="situation-group" class="selection-button situation-btn" data-value="多人聚餐">
+                <span class="icon">👨‍👩‍👧‍👦</span> 多人聚餐
+            </div>
+        </div>
+
+        <div class="section-title">2. 想吃什麼？</div>
+        
+        <div id="food-selection-main" class="selection-grid">
+            <div id="food-beef" class="selection-button food-btn" data-value="牛肉麵">
+                <span class="icon">🍜</span> 牛肉麵
+            </div>
+            <div id="food-lunch" class="selection-button food-btn" data-value="便當簡餐">
+                <span class="icon">🍱</span> 便當簡餐
+            </div>
+            <div id="food-snack-noodle" class="selection-button food-btn" data-value="小吃/麵店">
+                <span class="icon">🥟</span> 小吃/麵店
+            </div>
+            <div id="food-dumpling" class="selection-button food-btn" data-value="水餃/鍋貼">
+                <span class="icon">🍤</span> 水餃/鍋貼
+            </div>
+            <div id="food-hotpot" class="selection-button food-btn" data-value="火鍋">
+                <span class="icon">🍲</span> 火鍋
+            </div>
+            <div id="food-teppanyaki" class="selection-button food-btn" data-value="鐵板燒">
+                <span class="icon">🍳</span> 鐵板燒
+            </div>
+            <div id="food-steak" class="selection-button food-btn" data-value="牛排">
+                <span class="icon">🥩</span> 牛排
+            </div>
+            <div id="food-pasta" class="selection-button food-btn" data-value="義大利麵">
+                <span class="icon">🍝</span> 義大利麵
+            </div>
+            <div id="food-fastfood" class="selection-button food-btn" data-value="漢堡/速食">
+                <span class="icon">🍟</span> 漢堡/速食
+            </div>
+            <div id="food-japanese" class="selection-button food-btn" data-value="日式料理">
+                <span class="icon">🍣</span> 日式料理
+            </div>
+            <div id="food-korean" class="selection-button food-btn" data-value="韓式料理">
+                <span class="icon">🥢🍚</span> 韓式料理
+            </div>
+            <div id="food-thai" class="selection-button food-btn" data-value="泰式料理">
+                <span class="icon">🇹🇭</span> 泰式料理
+            </div>
+            <div id="food-curry" class="selection-button food-btn" data-value="咖哩">
+                <span class="icon">🍛</span> 咖哩
+            </div>
+            <div id="food-breakfast" class="selection-button food-btn" data-value="早午餐">
+                <span class="icon">🥪</span> 早午餐
+            </div>
+            <div id="food-vegetarian" class="selection-button food-btn" data-value="素食">
+                <span class="icon">🥬</span> 素食
+            </div>
+        </div>
+
+        <div id="food-selection-tea" class="selection-grid hidden-food">
+            <div id="food-drink" class="selection-button food-btn" data-value="手搖飲">
+                <span class="icon">🥤</span> 手搖飲
+            </div>
+            <div id="food-coffee" class="selection-button food-btn" data-value="咖啡廳">
+                <span class="icon">☕</span> 咖啡廳
+            </div>
+            <div id="food-fried" class="selection-button food-btn" data-value="炸雞">
+                <span class="icon">🍗</span> 炸雞/鹹酥雞
+            </div>
+            <div id="food-cake" class="selection-button food-btn" data-value="車輪餅">
+                <span class="icon">🥞</span> 車輪餅/雞蛋糕
+            </div>
+            <div id="food-bakery" class="selection-button food-btn" data-value="蔥油餅">
+                <span class="icon">🫓</span> 蔥油餅/抓餅
+            </div>
+            <div id="food-dessert" class="selection-button food-btn" data-value="甜點">
+                <span class="icon">🍧</span> 甜點/冰品
+            </div>
+            <div id="food-doughnut" class="selection-button food-btn" data-value="麵包">
+                <span class="icon">🍩</span> 麵包/甜甜圈
+            </div>
+            <div id="food-snack" class="selection-button food-btn" data-value="章魚燒">
+                <span class="icon">🐙</span> 章魚燒/小吃
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button id="search-button" class="action-btn">
+                <span style="margin-right: 5px;">🔍</span> 搜尋
+            </button>
+            <button id="random-button" class="action-btn">
+                <span style="margin-right: 5px;">🎲</span> 幫我選
+            </button>
+        </div>
+        
+        <p style="text-align: center; font-size: 0.8em; color: #999; margin-top: 20px;">
+            提示: 點擊按鈕選中或取消選中，點擊「搜尋」開始探索。
+        </p>
+    </div>
+
+    <script>
+        // --- 1. 定義選項列表 (已更新正餐選項及早午餐/素食) ---
+        const situationOptions = {
+            'situation-casual': '隨便吃吃', 'situation-solo': '1人獨享',
+            'situation-couple': '2人約會', 'situation-group': '多人聚餐'
+        };
+
+        const foodOptionsMain = {
+            'food-beef': '牛肉麵', 'food-lunch': '便當簡餐',
+            'food-snack-noodle': '小吃/麵店', 'food-dumpling': '水餃/鍋貼',
+            'food-hotpot': '火鍋', 'food-teppanyaki': '鐵板燒',
+            'food-steak': '牛排', 'food-pasta': '義大利麵',
+            'food-fastfood': '漢堡/速食', 'food-japanese': '日式料理',
+            'food-korean': '韓式料理', 'food-thai': '泰式料理',
+            'food-curry': '咖哩', 'food-breakfast': '早午餐', // 已改為早午餐
+            'food-vegetarian': '素食', // 已新增素食
+        };
+
+        const foodOptionsTea = {
+            'food-drink': '手搖飲', 'food-coffee': '咖啡廳',
+            'food-fried': '炸雞', 'food-cake': '雞蛋糕',
+            'food-bakery': '蔥油餅', 'food-dessert': '甜點',
+            'food-doughnut': '麵包', 'food-snack': '章魚燒',
+        };
+
+        let currentFoodOptions = foodOptionsMain; 
+        const GMAP_BASE_URL = "https://www.google.com/maps/search/?api=1&query=";
+
+
+        // --- 2. 核心函數：構建 Google Map 連結 (不變) ---
+        function buildGoogleMapURL(situation, food) {
+            let baseQuery = food;
+
+            if (situation === '多人聚餐') {
+                baseQuery += ' 餐廳 大空間';
+            } else if (situation === '1人獨享' || situation === '隨便吃吃') {
+                baseQuery += ' 小吃 便當';
+            } else if (situation === '2人約會') {
+                baseQuery += ' 浪漫 氣氛餐廳';
+            }
+            
+            const finalQuery = baseQuery + ' near me';
+            const encodedQuery = encodeURIComponent(finalQuery);
+
+            return GMAP_BASE_URL + encodedQuery;
+        }
+
+
+        // --- 3. UI 互動與數據獲取邏輯 (不變) ---
+
+        const foodSelectionMainDiv = document.getElementById('food-selection-main');
+        const foodSelectionTeaDiv = document.getElementById('food-selection-tea');
+        const situationButtons = document.querySelectorAll('.situation-btn');
+        const allFoodButtons = document.querySelectorAll('.food-btn');
+        const toggleMain = document.getElementById('toggle-main');
+        const toggleTea = document.getElementById('toggle-tea');
+
+        function switchFoodSelection(isMainMeal) {
+            // 切換 DOM 顯示
+            if (isMainMeal) {
+                foodSelectionMainDiv.classList.remove('hidden-food');
+                foodSelectionTeaDiv.classList.add('hidden-food');
+                currentFoodOptions = foodOptionsMain; 
+            } else {
+                foodSelectionMainDiv.classList.add('hidden-food');
+                foodSelectionTeaDiv.classList.remove('hidden-food');
+                currentFoodOptions = foodOptionsTea;
+            }
+            
+            // 清除並設定新的預設選中項 (選擇新選單中的第一個)
+            allFoodButtons.forEach(b => b.classList.remove('active-select'));
+            
+            const defaultId = isMainMeal ? 'food-beef' : 'food-drink';
+            const defaultButton = document.getElementById(defaultId);
+            if (defaultButton) defaultButton.classList.add('active-select');
+        }
+
+        // 綁定主餐/下午茶的切換事件
+        [toggleMain, toggleTea].forEach(btn => {
+            btn.addEventListener('click', () => {
+                // 切換樣式
+                toggleMain.classList.remove('active-main');
+                toggleTea.classList.remove('active-main');
+                btn.classList.add('active-main');
+
+                // 切換食物選單
+                const isMainMeal = (btn.id === 'toggle-main');
+                switchFoodSelection(isMainMeal);
+            });
+        });
+
+        // 用餐情境單選監聽
+        situationButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                situationButtons.forEach(b => b.classList.remove('active-select'));
+                btn.classList.add('active-select');
+            });
+        });
+
+        // 食物選項單選監聽
+        allFoodButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                allFoodButtons.forEach(b => b.classList.remove('active-select'));
+                btn.classList.add('active-select');
+            });
+        });
+
+
+        // 獲取當前被選中的情境和食物 (不變)
+        function getCurrentlySelected() {
+            const selectedSituationBtn = document.querySelector('.situation-btn.active-select');
+            const selectedFoodBtn = document.querySelector('.food-btn.active-select');
+
+            if (!selectedSituationBtn || !selectedFoodBtn) {
+                alert("請務必選擇一項用餐情境和一項想吃的食物！");
+                return null;
+            }
+            
+            return { 
+                situation: selectedSituationBtn.getAttribute('data-value'), 
+                food: selectedFoodBtn.getAttribute('data-value')
+            };
+        }
+
+
+        // --- 4. 綁定「搜尋」按鈕邏輯 (不變) ---
+        document.getElementById('search-button').addEventListener('click', () => {
+            const selection = getCurrentlySelected();
+
+            if (selection) {
+                const url = buildGoogleMapURL(selection.situation, selection.food);
+                window.open(url, '_blank');
+            }
+        });
+
+
+        // --- 5. 綁定「幫我選」按鈕邏輯 (不變) ---
+        function highlightRandomSelection(idToHighlight) {
+             // 傳入 id 而不是所有按鈕集合，讓它自動尋找並高亮
+             allFoodButtons.forEach(b => b.classList.remove('active-select'));
+             situationButtons.forEach(b => b.classList.remove('active-select'));
+             
+             const selectedElement = document.getElementById(idToHighlight);
+             if (selectedElement) selectedElement.classList.add('active-select');
+        }
+
+        document.getElementById('random-button').addEventListener('click', () => {
+            // 隨機選出情境
+            const situationKeys = Object.keys(situationOptions);
+            const randomSituationKey = situationKeys[Math.floor(Math.random() * situationKeys.length)];
+            const randomSituation = situationOptions[randomSituationKey];
+
+            // 隨機選出食物 (使用當前活躍的食物選項集合)
+            const foodKeys = Object.keys(currentFoodOptions);
+            const randomFoodKey = foodKeys[Math.floor(Math.random() * foodKeys.length)];
+            const randomFood = currentFoodOptions[randomFoodKey];
+
+            // 確保 UI 顯示與隨機結果同步
+            switchFoodSelection(currentFoodOptions === foodOptionsMain);
+
+            // 更新 UI 顯示隨機結果
+            highlightRandomSelection(randomSituationKey);
+            highlightRandomSelection(randomFoodKey);
+
+            // 構建並跳轉 URL
+            const url = buildGoogleMapURL(randomSituation, randomFood);
+            window.open(url, '_blank');
+        });
+
+        // 確保初始狀態：預設在「找正餐」並選中第一個選項
+        switchFoodSelection(true); 
+    </script>
+</body>
+</html>
